@@ -1,10 +1,6 @@
-package com.example.server;
-
+package com.example.server.MQTT_config;
 
 import org.springframework.context.annotation.Configuration;
-
-import java.io.FileWriter;
-import java.io.IOException;
 
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.springframework.context.annotation.Bean;
@@ -21,19 +17,24 @@ import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.core.MessageProducer;
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler;
-import com.google.gson.Gson;
-import com.google.gson.JsonIOException;
+
+import com.influxdb.client.InfluxDBClient;
 
 @Configuration
 public class MqttBean{
-    Gson gson = new Gson();
-    String filePath = "server\\src\\main\\java\\com\\example\\server\\data.json";
+    private final String token = "JJOEC-pmaTqaKxg7Du7it5sOSI9kNbrsj1PQmsnHNzJYTz3RNhpJtQA4X8LelJ50Qwz7n5cWnFvq5Pz5dRYVSg==";
+    private final String org = "2d15c57353bf8d43";
+    private final String bucket = "iot_data";
+    private final String url = "https://us-east-1-1.aws.cloud2.influxdata.com/";
+    InfluxDBConnection inConn = new InfluxDBConnection();
+    private InfluxDBClient influxDBClient = inConn.buildConnection(url, token, bucket, org);
+
     public MqttPahoClientFactory mqttPahoClientFactory(){
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
         MqttConnectOptions options = new MqttConnectOptions();
-        options.setServerURIs(new String[]{"tcp://broker.emqx.io:1883"});
-        options.setUserName("emqx");
-        options.setPassword("public".toCharArray());
+        options.setServerURIs(new String[]{"tcp://anhtuan@broker.emqx.io:1883"});
+        options.setUserName("user");
+        options.setPassword("123".toCharArray());
         factory.setConnectionOptions(options);
         return factory;
     }
@@ -45,7 +46,7 @@ public class MqttBean{
 
     @Bean
     public MessageProducer inbound(){
-        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter("serverIn", mqttPahoClientFactory(), "dqhuy");
+        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter("serverIn", mqttPahoClientFactory(), "sensor");
         adapter.setCompletionTimeout(5000);
         adapter.setConverter(new DefaultPahoMessageConverter());
         adapter.setQos(2);
@@ -60,8 +61,11 @@ public class MqttBean{
             @Override
             public void handleMessage(Message<?> message) throws MessagingException{
                 String topic = message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC).toString();
-                if(topic.equals("dqhuy")){
+                if(topic.equals("sensor")){
                     System.out.println("Received from sensor topic: " + message.getPayload().toString());
+                    String msg = message.getPayload().toString();
+                    //write data to InfluxDB
+                    inConn.writePointbyPOJO(influxDBClient, msg);
                 }
             }
         };
@@ -77,7 +81,7 @@ public class MqttBean{
     public MessageHandler mqttOutbound(){
         MqttPahoMessageHandler messageHandler = new MqttPahoMessageHandler("serverOut", mqttPahoClientFactory());
         messageHandler.setAsync(true);
-        messageHandler.setDefaultTopic("dqhuy");
+        messageHandler.setDefaultTopic("sensor");
         return messageHandler;
     }
 }

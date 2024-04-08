@@ -2,14 +2,17 @@ package com.example.server.MQTT_config;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.decimal4j.util.DoubleRounder;
 
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
+import com.example.server.Sensor;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.influxdb.annotations.Column;
@@ -79,11 +82,10 @@ public class InfluxDBConnection {
             Double tempValue = Double.parseDouble(obj.get("temp").toString());
             Double humidityValue = Double.parseDouble(obj.get("humidity").toString());
 
-            Sensor sensor = new Sensor();
-
-            sensor.temperature = DoubleRounder.round(tempValue, 2);
-            sensor.humidity = DoubleRounder.round(humidityValue, 2);
-            sensor.time = Instant.now();
+            Sensor sensor = new Sensor(
+                    Instant.now(),
+                    DoubleRounder.round(tempValue, 2),
+                    DoubleRounder.round(humidityValue, 2));
 
             writeApi.writeMeasurement(WritePrecision.NS, sensor);
             flag = true;
@@ -95,21 +97,10 @@ public class InfluxDBConnection {
         return flag;
     }
 
-    @Measurement(name = "sensor")
-    private static class Sensor {
-
-        @Column
-        Double temperature;
-
-        @Column
-        Double humidity;
-
-        @Column(timestamp = true)
-        Instant time;
-    }
-
-    public void queryData(InfluxDBClient influxDBClient) {
-        String flux = "from(bucket:\"myFirstBucket\") |> range(start:0) |> filter(fn: (r) => r[\"_measurement\"] == \"sensor\") |> filter(fn: (r) => r[\"sensor_id\"] == \"TLM0100\"or r[\"sensor_id\"] == \"TLM0101\" or r[\"sensor_id\"] == \"TLM0103\" or r[\"sensor_id\"] == \"TLM0200\") |> sort() |> yield(name: \"sort\")";
+    public String queryData(InfluxDBClient influxDBClient) {
+        String queryString = "";
+        List<Sensor> list = new ArrayList<Sensor>();
+        String sql =  "from(bucket:\"iot_data\") |> range(start:0) |> filter(fn: (r) => r[\"_measurement\"] == \"sensor\") |> filter(fn: (r) => r[\"_field\"] == \"humidity\") |> sort() |> limit(n:10)";
         // from(bucket: "myFirstBucket")
         // |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
         // |> filter(fn: (r) => r["_measurement"] == "sensor")
@@ -119,15 +110,15 @@ public class InfluxDBConnection {
         // |> sort()
         // |> yield(name: "sort")
 
-        QueryApi queryApi = influxDBClient.getQueryApi();
-
-        List<FluxTable> tables = queryApi.query(flux);
+        List<FluxTable> tables = influxDBClient.getQueryApi().query(sql);
         for (FluxTable fluxTable : tables) {
             List<FluxRecord> records = fluxTable.getRecords();
             for (FluxRecord fluxRecord : records) {
-                System.out.println(fluxRecord.getValueByKey("sensor_id"));
+                queryString += fluxRecord.getRow() + "\n";
             }
         }
+
+        return queryString;
     }
 
     public boolean deleteRecord(InfluxDBClient influxDBClient) {

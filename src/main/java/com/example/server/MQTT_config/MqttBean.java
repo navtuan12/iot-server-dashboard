@@ -13,6 +13,7 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.MessagingException;
 
+import com.example.server.InfluxDB.InfluxDBConnection;
 import com.influxdb.client.InfluxDBClient;
 
 import org.springframework.integration.mqtt.support.MqttHeaders;
@@ -30,8 +31,10 @@ public class MqttBean{
     private final String bucket = "iot_data";
     private final String url = "https://us-east-1-1.aws.cloud2.influxdata.com/";
     private final String topic = "nt533_sensor";
-    InfluxDBConnection inConn = new InfluxDBConnection();
+    
+    private InfluxDBConnection inConn = new InfluxDBConnection();
     private InfluxDBClient influxDBClient = inConn.buildConnection(url, token, bucket, org);
+    
 
     public MqttPahoClientFactory mqttPahoClientFactory(){
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
@@ -70,6 +73,8 @@ public class MqttBean{
                     String msg = message.getPayload().toString();
                     //write data to InfluxDB
                     inConn.writePointbyPOJO(influxDBClient, msg);
+                    //messageHandle.broadcastMessage(msg);
+
                 }
             }
         };

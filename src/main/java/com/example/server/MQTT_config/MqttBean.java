@@ -29,6 +29,7 @@ public class MqttBean{
     private final String org = "2d15c57353bf8d43";
     private final String bucket = "iot_data";
     private final String url = "https://us-east-1-1.aws.cloud2.influxdata.com/";
+    private final String topic = "nt533_sensor";
     InfluxDBConnection inConn = new InfluxDBConnection();
     private InfluxDBClient influxDBClient = inConn.buildConnection(url, token, bucket, org);
 
@@ -36,7 +37,7 @@ public class MqttBean{
         DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
         MqttConnectOptions options = new MqttConnectOptions();
         options.setServerURIs(new String[]{"tcp://anhtuan@broker.emqx.io:1883"});
-        options.setUserName("user");
+        options.setUserName("user123");
         options.setPassword("123".toCharArray());
         factory.setConnectionOptions(options);
         return factory;
@@ -49,7 +50,7 @@ public class MqttBean{
 
     @Bean
     public MessageProducer inbound(){
-        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(MqttAsyncClient.generateClientId(), mqttPahoClientFactory(), "sensor");
+        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(MqttAsyncClient.generateClientId(), mqttPahoClientFactory(), topic);
         adapter.setCompletionTimeout(5000);
         adapter.setConverter(new DefaultPahoMessageConverter());
         adapter.setQos(2);
@@ -64,7 +65,7 @@ public class MqttBean{
             @Override
             public void handleMessage(Message<?> message) throws MessagingException{
                 String topic = message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC).toString();
-                if(topic.equals("sensor")){
+                if(topic.equals(topic)){
                     System.out.println("Received from sensor topic: " + message.getPayload().toString());
                     String msg = message.getPayload().toString();
                     //write data to InfluxDB
@@ -84,7 +85,7 @@ public class MqttBean{
     public MessageHandler mqttOutbound(){
         MqttPahoMessageHandler messageHandler = new MqttPahoMessageHandler(MqttAsyncClient.generateClientId(), mqttPahoClientFactory());
         messageHandler.setAsync(true);
-        messageHandler.setDefaultTopic("sensor");
+        messageHandler.setDefaultTopic(topic);
         return messageHandler;
     }
 }

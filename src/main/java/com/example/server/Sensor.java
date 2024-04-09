@@ -5,7 +5,14 @@ import java.time.Instant;
 import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 @Measurement(name = "sensor")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Sensor {
 
     @Column(timestamp = true)
@@ -16,10 +23,4 @@ public class Sensor {
 
     @Column
     Double humidity;
-
-    public Sensor(Instant time, Double temperature, Double humidity) {
-        this.time = time;
-        this.temperature = temperature;
-        this.humidity = humidity;
-    }
 }

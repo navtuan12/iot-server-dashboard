@@ -1,5 +1,6 @@
 package com.example.server;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +19,11 @@ public class SensorService {
 
     public String getSensorData() {
         Query query = new Query();
-        query.with(Sort.by(Sort.Direction.DESC, "date"));
+        query.with(Sort.by(Sort.Direction.DESC, "timestamp"));
         query.limit(10);
         List<Sensor> latestSensor = mongoTemplate.find(query, Sensor.class);
-
+        Collections.reverse(latestSensor);
+        
         String tempList;
         tempList = "[";
         for(Sensor sensor : latestSensor){

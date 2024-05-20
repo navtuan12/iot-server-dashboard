@@ -24,14 +24,26 @@ public class SensorService {
         List<Sensor> latestSensor = mongoTemplate.find(query, Sensor.class);
         Collections.reverse(latestSensor);
         
-        String tempList;
-        tempList = "[";
+        String tempList = "[";
         for(Sensor sensor : latestSensor){
-            tempList += "{\"timestamp\":" + "\"" + sensor.getTimestamp() + "\"" + ",\n \"temperature\": " + sensor.getTemperature() + ",\n \"humidity\": " + sensor.getHumidity() + "}\n,";   
+            String timeFix = sensor.getTimestamp().toString().substring(4,19);
+            tempList += "{\"timestamp\":" + "\"" + timeFix + "\"" + ",\n \"temperature\": " + sensor.getTemperature() + ",\n \"humidity\": " + sensor.getHumidity() + "}\n,";   
         }
         tempList = tempList.substring(0, tempList.length() - 1);
         tempList += "]";
         return tempList;
     }
 
+    public String getGaugeData(){
+        Query query = new Query();
+        query.with(Sort.by(Sort.Direction.DESC, "timestamp"));
+        query.limit(1);
+        List<Sensor> latestSensor = mongoTemplate.find(query, Sensor.class);
+
+        String gaugeData = "{";
+        String timeFix = latestSensor.get(0).getTimestamp().toString().substring(4,19);
+        gaugeData += "\"timestamp\":" + "\"" + timeFix + "\"" + ",\"temperature\": " + latestSensor.get(0).getTemperature() + ", \"humidity\": " + latestSensor.get(0).getHumidity() + "}";
+
+        return gaugeData;
+    }
 }

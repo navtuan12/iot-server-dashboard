@@ -46,4 +46,17 @@ public class SensorService {
 
         return gaugeData;
     }
+
+    public String getMotorcycleCount(){
+        Query query = new Query();
+        query.with(Sort.by(Sort.Direction.DESC, "timestamp"));
+        query.limit(1);
+        List<MotorcycleCount> latestCount = mongoTemplate.find(query, MotorcycleCount.class);
+
+        String gaugeData = "{";
+        String timeFix = latestCount.get(0).getTimestamp().toString().substring(4,19);
+        gaugeData += "\"timestamp\":" + "\"" + timeFix + "\"" + ",\"count\": " + latestCount.get(0).getCount() + "}";
+
+        return gaugeData;
+    }
 }

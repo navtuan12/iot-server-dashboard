@@ -44,6 +44,10 @@ public class SensorController {
         return new ResponseEntity<String>(service.getGaugeData(), HttpStatus.OK);
     }
 
+    @GetMapping("/dashboard/count_motorcycle")
+    public ResponseEntity<String> getMotorcycleCountData(){
+        return new ResponseEntity<String>(service.getMotorcycleCount(), HttpStatus.OK);
+    }
     // @PostMapping("/dashboard/video")
     // public ResponseEntity<String> receiveFrame(@RequestParam("files") MultipartFile file) {
     //     if (file.isEmpty()) {
